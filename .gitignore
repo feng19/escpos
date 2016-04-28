@@ -1,0 +1,11 @@
+.idea
+*.iml
+/.rebar
+/deps
+/ebin
+*~
+*.d
+/.erlang.mk
+/_rel
+relx
+_build

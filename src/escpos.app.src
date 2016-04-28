@@ -1,0 +1,6 @@
+{application, escpos,
+ [
+  {registered, []},
+  {applications, [kernel,stdlib]},
+  {modules, []}
+ ]}.
