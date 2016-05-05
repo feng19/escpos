@@ -117,7 +117,7 @@ get_pixels(Bin, Count, Dim, Size, ZeroSize, Acc) ->
     <<RowBits:Dim/bits, Bits/bits>> = Bin,
     Row0 = get_pixels0(RowBits, Size, <<>>),
     Row = <<Row0/bits, 0:ZeroSize>>,
-    FullRow = list_to_binary(lists:duplicate(Size, Row)),
+    FullRow = binary:copy(Row, Size),
     get_pixels(Bits, Count + 1, Dim, Size, ZeroSize, <<Acc/binary, FullRow/binary>>).
 
 %% Black pixel
