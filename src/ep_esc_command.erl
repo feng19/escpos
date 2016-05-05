@@ -99,32 +99,35 @@ qrcode(Binary, ECC, ModuleSize) ->
         1 ->
             {ModuleSize, 0}
     end,
-    Pixels = get_pixels(Data, 0, Dim, Size, <<>>),
-    X = Dim * Size,
-    Y = X,
+    X0 = Dim * Size,
     ZeroSize =
-    case (X * Y) rem 8 of
+    case X0 rem 8 of
         0 -> 0;
         Zero -> 8 - Zero
     end,
-    <<29, 118, 48, M, X:16/little, Y:16/little, Pixels/bits, 0:ZeroSize>>.
+    Pixels = get_pixels(Data, 0, Dim, Size, ZeroSize, <<>>),
+    X = (X0 + ZeroSize) div 8,
+    Y = X0,
+%%    io:format("Dim:~p,X:~p,Y:~p~n",[Dim,X,Y]),
+    <<29, 118, 48, M, X:16/little, Y:16/little, Pixels/binary>>.
 
-get_pixels(<<>>, Dim, Dim, _Size, Acc) ->
+get_pixels(<<>>, Dim, Dim, _Size, _ZeroSize, Acc) ->
     Acc;
-get_pixels(Bin, Count, Dim, Size, Acc) ->
+get_pixels(Bin, Count, Dim, Size, ZeroSize, Acc) ->
     <<RowBits:Dim/bits, Bits/bits>> = Bin,
-    Row = get_pixels0(RowBits, Size, <<>>),
-    FullRow = list_to_bitstring(lists:duplicate(Size, Row)),
-    get_pixels(Bits, Count + 1, Dim, Size, <<Acc/bits, FullRow/bits>>).
+    Row0 = get_pixels0(RowBits, Size, <<>>),
+    Row = <<Row0/bits, 0:ZeroSize>>,
+    FullRow = list_to_binary(lists:duplicate(Size, Row)),
+    get_pixels(Bits, Count + 1, Dim, Size, ZeroSize, <<Acc/binary, FullRow/binary>>).
 
 %% Black pixel
-get_pixels0(<<1:1, Bits/bits>>, Size, Acc) when Size > 8 ->
-    get_pixels0(<<1:1, Bits/bits>>, Size-8, <<Acc/bits, 255>>);
+get_pixels0(<<1:1, _Bits/bits>> = Old, Size, Acc) when Size > 8 ->
+    get_pixels0(Old, Size-8, <<Acc/bits, 255>>);
 get_pixels0(<<1:1, Bits/bits>>, Size, Acc) ->
     get_pixels0(Bits, Size, <<Acc/bits, (255 bsr (8 - Size)):Size>>);
 %% White pixel
-get_pixels0(<<0:1, Bits/bits>>, Size, Acc) when Size > 8 ->
-    get_pixels0(<<0:1, Bits/bits>>, Size-8, <<Acc/bits, 0>>);
+get_pixels0(<<0:1, _Bits/bits>> = Old, Size, Acc) when Size > 8 ->
+    get_pixels0(Old, Size-8, <<Acc/bits, 0>>);
 get_pixels0(<<0:1, Bits/bits>>, Size, Acc) ->
     get_pixels0(Bits, Size, <<Acc/bits, 0:Size>>);
 get_pixels0(<<>>, _Size, Acc) ->
